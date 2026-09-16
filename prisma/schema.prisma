@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum IngredientSource {
+  MANUAL
+  CAMERA
+  SENSOR
+  HARDWARE
+  AI_SCAN
+}
+
+model Ingredient {
+  id         Int              @id @default(autoincrement())
+  name       String
+  category   String
+  quantity   Float
+  unit       String
+  expiryDate DateTime?
+  source     IngredientSource @default(MANUAL)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@map("ingredients")
+}
+
+model Recipe {
+  id           Int                @id @default(autoincrement())
+  title        String
+  description  String?            @db.Text
+  cookingTime  Int
+  difficulty   String
+  instructions Json
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  ingredients  RecipeIngredient[]
+
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id             Int     @id @default(autoincrement())
+  recipeId       Int
+  recipe         Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientName String
+  quantity       Float
+  unit           String
+  isOptional     Boolean @default(false)
+
+  @@map("recipe_ingredients")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  title     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+
+  @@map("messages")
+}
