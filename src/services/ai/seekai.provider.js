@@ -8,7 +8,8 @@ async function generateCompletion({ systemPrompt, userPrompt }) {
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt }
-    ]
+    ],
+    max_tokens: 4000
   };
 
   const response = await fetch(`${env.AI_BASE_URL}/v1/chat/completions`, {

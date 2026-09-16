@@ -8,6 +8,11 @@ function parseRecipeResponse(rawContent) {
     if (cleaned.endsWith('```')) cleaned = cleaned.replace(/```$/, '');
     cleaned = cleaned.trim();
 
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    }
+
     const data = JSON.parse(cleaned);
     
     if (!data.recipes || !Array.isArray(data.recipes)) {
