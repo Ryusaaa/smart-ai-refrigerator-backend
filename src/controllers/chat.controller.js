@@ -35,6 +35,9 @@ class ChatController {
         },
         onChunk: (chunkText) => {
           res.write(`event: token\ndata: ${JSON.stringify({ token: chunkText })}\n\n`);
+        },
+        onRecipe: (savedRecipe) => {
+          res.write(`event: recipe\ndata: ${JSON.stringify(savedRecipe)}\n\n`);
         }
       });
 

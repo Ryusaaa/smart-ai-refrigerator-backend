@@ -43,11 +43,56 @@ function parseRecipeResponse(rawContent) {
   }
 }
 
+function extractRecipeSuggestion(rawText) {
+  if (!rawText) return { cleanText: '', recipeSuggestion: null };
+
+  const tagRegex = /<<<RECIPE_SUGGESTION>>>([\s\S]*?)<<<END_RECIPE_SUGGESTION>>>/;
+  const match = rawText.match(tagRegex);
+
+  if (!match) {
+    return { cleanText: rawText.trim(), recipeSuggestion: null };
+  }
+
+  const cleanText = rawText.replace(tagRegex, '').trim();
+  let jsonString = match[1].trim();
+
+  // Clean code fences if present
+  if (jsonString.startsWith('```json')) jsonString = jsonString.replace(/^```json/, '');
+  if (jsonString.startsWith('```')) jsonString = jsonString.replace(/^```/, '');
+  if (jsonString.endsWith('```')) jsonString = jsonString.replace(/```$/, '');
+  jsonString = jsonString.trim();
+
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (parsed && typeof parsed === 'object' && parsed.title) {
+      const recipeSuggestion = {
+        title: parsed.title,
+        description: parsed.description || '',
+        cookingTime: Number(parsed.cookingTime) || 30,
+        difficulty: (parsed.difficulty || 'medium').toLowerCase(),
+        ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients.map(i => ({
+          ingredientName: i.ingredientName || i.name || 'Ingredient',
+          quantity: Number(i.quantity) || 1,
+          unit: i.unit || 'pcs',
+          isOptional: Boolean(i.isOptional)
+        })) : [],
+        instructions: Array.isArray(parsed.instructions) ? parsed.instructions : []
+      };
+      return { cleanText, recipeSuggestion };
+    }
+  } catch (err) {
+    console.warn('Failed to parse recipe suggestion JSON from chat response:', err.message);
+  }
+
+  return { cleanText, recipeSuggestion: null };
+}
+
 function parseChatResponse(rawContent) {
-  return rawContent.trim();
+  return (rawContent || '').trim();
 }
 
 module.exports = {
   parseRecipeResponse,
-  parseChatResponse
+  parseChatResponse,
+  extractRecipeSuggestion
 };

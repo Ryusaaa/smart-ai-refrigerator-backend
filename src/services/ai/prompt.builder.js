@@ -37,7 +37,24 @@ Rules:
 7. Explain missing ingredients clearly.
 8. If the user asks about inventory, answer from the provided inventory context.
 9. Do not invent inventory data.
-10. If information is unavailable, say that it is unavailable.`;
+10. If information is unavailable, say that it is unavailable.
+11. Jika kamu merekomendasikan SATU resep masakan konkret yang siap dimasak oleh user, di akhir jawabanmu sertakan blok data terstruktur berikut:
+<<<RECIPE_SUGGESTION>>>
+{
+  "title": "Nama Resep",
+  "description": "Deskripsi ringkas resep",
+  "cookingTime": 25,
+  "difficulty": "easy",
+  "ingredients": [
+    { "ingredientName": "Nama Bahan", "quantity": 200, "unit": "g", "isOptional": false }
+  ],
+  "instructions": [
+    "Langkah 1...",
+    "Langkah 2..."
+  ]
+}
+<<<END_RECIPE_SUGGESTION>>>
+Pastikan format JSON di dalam tag tersebut valid. Jika kamu HANYA menjawab pertanyaan umum, chit-chat, atau tidak menyarankan resep masakan spesifik, JANGAN sertakan blok <<<RECIPE_SUGGESTION>>> sama sekali.`;
 
   const inventoryText = inventory.length > 0
     ? inventory.map(i => `- ${i.name}: ${i.quantity} ${i.unit}${i.daysUntilExpiry !== null && i.daysUntilExpiry !== undefined ? ` (expires in ${i.daysUntilExpiry} days)` : ''}`).join('\n')
