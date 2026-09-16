@@ -19,6 +19,23 @@ function parseRecipeResponse(rawContent) {
       throw new AppError('Invalid response format: missing recipes array', 500);
     }
     
+    // Normalize and sanitize sources
+    data.recipes.forEach(recipe => {
+      if (Array.isArray(recipe.sources)) {
+        recipe.sources = recipe.sources.filter(s => {
+          if (!s || typeof s !== 'object' || !s.title || !s.url) return false;
+          try {
+            const url = new URL(s.url);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+          } catch (e) {
+            return false;
+          }
+        });
+      } else {
+        recipe.sources = [];
+      }
+    });
+
     return data.recipes;
   } catch (error) {
     if (error instanceof AppError) throw error;

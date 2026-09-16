@@ -1,5 +1,6 @@
 const recommendationService = require('../services/recommendation.service');
 const aiService = require('../services/ai/ai.service');
+const imageService = require('../services/image/image.service');
 const recipeRepository = require('../repositories/recipe.repository');
 const { AppError } = require('../middlewares/error.middleware');
 
@@ -20,7 +21,13 @@ class RecipeController {
       
       const savedRecipes = [];
       for (const recipe of scoredRecipes) {
-        const saved = await recipeRepository.create(recipe);
+        let imageUrl = null;
+        try {
+          imageUrl = await imageService.getRecipeImage(recipe.title);
+        } catch (e) {
+          // ignore image fetch error fallback to null
+        }
+        const saved = await recipeRepository.create({ ...recipe, imageUrl });
         savedRecipes.push({ ...saved, recommendationScore: recipe.recommendationScore });
       }
 

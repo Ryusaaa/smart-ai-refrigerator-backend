@@ -22,6 +22,7 @@ model Ingredient {
   quantity   Float
   unit       String
   expiryDate DateTime?
+  imageUrl   String?          @db.VarChar(2048)
   source     IngredientSource @default(MANUAL)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
@@ -36,9 +37,11 @@ model Recipe {
   cookingTime  Int
   difficulty   String
   instructions Json
+  imageUrl     String?            @db.VarChar(2048)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
   ingredients  RecipeIngredient[]
+  sources      RecipeSource[]
 
   @@map("recipes")
 }
@@ -53,6 +56,18 @@ model RecipeIngredient {
   isOptional     Boolean @default(false)
 
   @@map("recipe_ingredients")
+}
+
+model RecipeSource {
+  id        Int      @id @default(autoincrement())
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  title     String
+  url       String   @db.VarChar(2048)
+  note      String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("recipe_sources")
 }
 
 enum MessageRole {

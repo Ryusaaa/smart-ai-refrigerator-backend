@@ -14,4 +14,9 @@ module.exports = {
   AI_API_KEY: process.env.AI_API_KEY || process.env.SEEKAI_API_KEY || process.env.TABIAI_API_KEY || '',
   AI_MODEL: process.env.AI_MODEL || process.env.SEEKAI_MODEL || process.env.TABIAI_MODEL || 'gemini-3.8-flash',
   AUDIO_ENCRYPTION_KEY: process.env.AUDIO_ENCRYPTION_KEY || null,
+  IMAGE_SEARCH_PROVIDER: process.env.IMAGE_SEARCH_PROVIDER || 'unsplash',
+  IMAGE_SEARCH_API_KEY: process.env.IMAGE_SEARCH_API_KEY || null,
+  IMAGE_SEARCH_ENGINE_ID: process.env.IMAGE_SEARCH_ENGINE_ID || null,
+  RECIPE_SEARCH_PROVIDER: process.env.RECIPE_SEARCH_PROVIDER || null,
+  RECIPE_SEARCH_API_KEY: process.env.RECIPE_SEARCH_API_KEY || null,
 };
