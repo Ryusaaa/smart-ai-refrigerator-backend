@@ -1,17 +1,17 @@
-const tabiaiProvider = require('./tabiai.provider');
+const seekaiProvider = require('./seekai.provider');
 const promptBuilder = require('./prompt.builder');
 const responseParser = require('./response.parser');
 
 class AIService {
   async generateRecipes(context) {
     const { systemPrompt, userPrompt } = promptBuilder.buildRecipePrompt(context);
-    const rawContent = await tabiaiProvider.generateCompletion({ systemPrompt, userPrompt });
+    const rawContent = await seekaiProvider.generateCompletion({ systemPrompt, userPrompt });
     return responseParser.parseRecipeResponse(rawContent);
   }
 
   async generateChat(inventory, conversationHistory, userMessage) {
     const { systemPrompt, userPrompt } = promptBuilder.buildChatPrompt(inventory, conversationHistory, userMessage);
-    const rawContent = await tabiaiProvider.generateCompletion({ systemPrompt, userPrompt });
+    const rawContent = await seekaiProvider.generateCompletion({ systemPrompt, userPrompt });
     return responseParser.parseChatResponse(rawContent);
   }
 }
