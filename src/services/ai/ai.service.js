@@ -14,6 +14,11 @@ class AIService {
     const rawContent = await seekaiProvider.generateCompletion({ systemPrompt, userPrompt });
     return responseParser.parseChatResponse(rawContent);
   }
+
+  async generateChatStream(inventory, conversationHistory, userMessage, onChunk) {
+    const { systemPrompt, userPrompt } = promptBuilder.buildChatPrompt(inventory, conversationHistory, userMessage);
+    return seekaiProvider.generateCompletionStream({ systemPrompt, userPrompt, onChunk });
+  }
 }
 
 module.exports = new AIService();
