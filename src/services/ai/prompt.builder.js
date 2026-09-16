@@ -16,12 +16,31 @@ Generate 3 recipe recommendations based on these ingredients and preferences. Re
 }
 
 function buildChatPrompt(inventory, conversationHistory, userMessage) {
-  const systemPrompt = `You are SMARTAI, a helpful smart refrigerator assistant. You help users manage their food inventory, suggest recipes, and answer food-related questions.`;
-  
-  let historyText = conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n');
-  const inventoryText = inventory.map(i => `${i.name} (${i.quantity} ${i.unit})`).join(', ');
+  const systemPrompt = `You are SMARTAI Refrigerator Assistant.
 
-  const userPrompt = `Current Inventory: ${inventoryText || 'Empty'}\n\nChat History:\n${historyText}\n\nUser: ${userMessage}`;
+You help the user cook using the ingredients currently available in their refrigerator.
+
+Rules:
+1. Treat database inventory as the source of truth.
+2. Do not claim an ingredient is available unless it is in inventory.
+3. Prefer recipes using available ingredients.
+4. Prioritize ingredients close to expiration when appropriate.
+5. Minimize unnecessary additional ingredients.
+6. Respect user cooking preferences.
+7. Explain missing ingredients clearly.
+8. If the user asks about inventory, answer from the provided inventory context.
+9. Do not invent inventory data.
+10. If information is unavailable, say that it is unavailable.`;
+
+  const inventoryText = inventory.length > 0
+    ? inventory.map(i => `- ${i.name}: ${i.quantity} ${i.unit}${i.daysUntilExpiry !== null && i.daysUntilExpiry !== undefined ? ` (expires in ${i.daysUntilExpiry} days)` : ''}`).join('\n')
+    : 'No ingredients currently in inventory.';
+
+  const historyText = conversationHistory.length > 0
+    ? conversationHistory.map(m => `${m.role === 'USER' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')
+    : '';
+
+  const userPrompt = `Current Refrigerator Inventory:\n${inventoryText}\n\n${historyText ? `Conversation so far:\n${historyText}\n\n` : ''}User: ${userMessage}`;
 
   return { systemPrompt, userPrompt };
 }

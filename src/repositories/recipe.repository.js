@@ -15,15 +15,22 @@ class RecipeRepository {
   }
 
   async create(data) {
+    const ingredientData = (data.ingredients || []).map(ing => ({
+      ingredientName: ing.ingredientName || ing.name,
+      quantity: Number(ing.quantity) || 0,
+      unit: ing.unit || '',
+      isOptional: Boolean(ing.isOptional) || (ing.available === false),
+    }));
+
     return prisma.recipe.create({
       data: {
         title: data.title,
-        description: data.description,
-        cookingTime: data.cookingTime,
-        difficulty: data.difficulty,
-        instructions: data.instructions,
+        description: data.description || null,
+        cookingTime: Number(data.cookingTime) || 30,
+        difficulty: data.difficulty || 'medium',
+        instructions: Array.isArray(data.instructions) ? data.instructions : [data.instructions],
         ingredients: {
-          create: data.ingredients
+          create: ingredientData
         }
       },
       include: { ingredients: true }

@@ -1,10 +1,10 @@
 require('dotenv').config();
 
 const requiredEnvs = ['DATABASE_URL', 'TABIAI_BASE_URL', 'TABIAI_API_KEY', 'TABIAI_MODEL'];
-const missingEnvs = requiredEnvs.filter(env => !process.env[env]);
+const missingEnvs = requiredEnvs.filter(key => !process.env[key]);
 
 if (missingEnvs.length > 0) {
-  throw new Error(`Missing required environment variables: ${missingEnvs.join(', ')}`);
+  console.warn(`[WARN] Missing environment variables: ${missingEnvs.join(', ')}. Copy .env.example to .env and fill in values.`);
 }
 
 module.exports = {

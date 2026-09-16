@@ -6,7 +6,7 @@ const { AppError } = require('../middlewares/error.middleware');
 class RecipeController {
   async generate(req, res, next) {
     try {
-      const preferences = req.body;
+      const preferences = req.body.preferences || req.body;
       const context = await recommendationService.buildRecommendationContext(preferences);
       
       if (context.availableIngredients.length === 0) {
