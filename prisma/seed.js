@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const imageService = require('../src/services/image/image.service');
 const prisma = new PrismaClient();
 
 async function main() {
@@ -38,10 +39,19 @@ async function main() {
     { name: 'Green Beans', category: 'Vegetable', quantity: 200, unit: 'g', expiryDate: new Date(now + 5 * day) }
   ];
 
-  console.log('Seeding database...');
+  console.log('Seeding database with images...');
   for (const ingredient of ingredients) {
+    let imageUrl = null;
+    try {
+      imageUrl = await imageService.getIngredientImage(ingredient.name);
+    } catch (e) {
+      // ignore
+    }
     await prisma.ingredient.create({
-      data: ingredient,
+      data: {
+        ...ingredient,
+        imageUrl,
+      },
     });
   }
   console.log('Seeding completed.');

@@ -2,6 +2,7 @@ const ingredientRepository = require('../repositories/ingredient.repository');
 const { getExpirationStatus, getDaysUntilExpiry } = require('../utils/date.utils');
 const { NotFoundError } = require('../middlewares/error.middleware');
 const { ExpirationStatus } = require('../constants/enums');
+const imageService = require('./image/image.service');
 
 class InventoryService {
   async getAll(query = {}) {
@@ -31,6 +32,13 @@ class InventoryService {
   }
 
   async create(data) {
+    if (!data.imageUrl && data.name) {
+      try {
+        data.imageUrl = await imageService.getIngredientImage(data.name);
+      } catch (err) {
+        console.warn('Failed to fetch ingredient image:', err.message);
+      }
+    }
     return ingredientRepository.create(data);
   }
 

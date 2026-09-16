@@ -8,7 +8,7 @@ class ImageService {
 
   async getIngredientImage(ingredientName) {
     if (!ingredientName) return null;
-    return imageProvider.searchImage(`${ingredientName} fresh ingredient`);
+    return imageProvider.searchImage(`${ingredientName} food icon flat illustration`);
   }
 }
 
