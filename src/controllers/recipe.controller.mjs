@@ -1,0 +1,60 @@
+import recommendationService from '../services/recommendation.service.mjs';
+import aiService from '../services/ai/ai.service.mjs';
+import imageService from '../services/image/image.service.mjs';
+import recipeRepository from '../repositories/recipe.repository.mjs';
+import { AppError } from '../middlewares/error.middleware.mjs';
+
+class RecipeController {
+  async generate(req, res, next) {
+    try {
+      const preferences = req.body.preferences || req.body;
+      const context = await recommendationService.buildRecommendationContext(preferences);
+
+      if (context.availableIngredients.length === 0) {
+        throw new AppError('No available ingredients in inventory', 400);
+      }
+
+      const generatedRecipes = await aiService.generateRecipes(context);
+      const scoredRecipes = recommendationService.attachScores(generatedRecipes, context);
+
+      scoredRecipes.sort((a, b) => b.recommendationScore - a.recommendationScore);
+
+      const savedRecipes = [];
+      for (const recipe of scoredRecipes) {
+        let imageUrl = null;
+        try {
+          imageUrl = await imageService.getRecipeImage(recipe.title);
+        } catch (e) {
+          // ignore image fetch error fallback to null
+        }
+        const saved = await recipeRepository.create({ ...recipe, imageUrl });
+        savedRecipes.push({ ...saved, recommendationScore: recipe.recommendationScore });
+      }
+
+      res.json({ success: true, data: savedRecipes });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAll(req, res, next) {
+    try {
+      const data = await recipeRepository.findAll();
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getById(req, res, next) {
+    try {
+      const data = await recipeRepository.findById(req.params.id);
+      if (!data) throw new AppError('Recipe not found', 404);
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+export default new RecipeController();

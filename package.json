@@ -2,11 +2,12 @@
   "name": "smart-ai-refrigerator-backend",
   "version": "1.0.0",
   "description": "Backend for SMARTAI Refrigerator",
-  "main": "src/index.js",
+  "type": "module",
+  "main": "src/index.mjs",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "db:seed": "node prisma/seed.js"
+    "start": "node src/index.mjs",
+    "dev": "nodemon src/index.mjs",
+    "db:seed": "node prisma/seed.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.23.0",
@@ -15,8 +16,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
-    "multer": "^1.4.5-lts.1",
-    "node-fetch": "^2.7.0"
+    "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
