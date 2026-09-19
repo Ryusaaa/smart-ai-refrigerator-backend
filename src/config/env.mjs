@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const requiredEnvs = ['DATABASE_URL'];
+const requiredEnvs = ['DATABASE_URL', 'JWT_SECRET'];
 const missingEnvs = requiredEnvs.filter((key) => !process.env[key]);
 
 if (missingEnvs.length > 0) {
@@ -11,6 +11,10 @@ if (missingEnvs.length > 0) {
 const env = {
   PORT: process.env.PORT || 5000,
   DATABASE_URL: process.env.DATABASE_URL,
+
+  // Auth
+  JWT_SECRET: process.env.JWT_SECRET || 'dev_insecure_secret_change_me',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
 
   // Gemini AI configuration (@google/genai)
   AI_API_KEY: process.env.GEMINI_API_KEY || process.env.AI_API_KEY || '',
@@ -23,6 +27,10 @@ const env = {
   RECIPE_SEARCH_PROVIDER: process.env.RECIPE_SEARCH_PROVIDER || null,
   RECIPE_SEARCH_API_KEY: process.env.RECIPE_SEARCH_API_KEY || null,
 };
+
+if (env.JWT_SECRET === 'dev_insecure_secret_change_me') {
+  console.warn('[WARN] JWT_SECRET is not set. Using an insecure default — set JWT_SECRET in .env before deploying.');
+}
 
 if (!env.AI_API_KEY) {
   console.warn('[WARN] GEMINI_API_KEY is not set. AI features (recipe generation, chat) will fail until it is configured in .env.');

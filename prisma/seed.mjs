@@ -1,6 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
-const imageService = require('../src/services/image/image.service');
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client';
+import  imageService  from '../src/services/image/image.service.mjs';
+
+const prisma = new PrismaClient()
 
 async function main() {
   const now = Date.now();
