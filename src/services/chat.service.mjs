@@ -2,8 +2,7 @@ import conversationRepository from '../repositories/conversation.repository.mjs'
 import recipeRepository from '../repositories/recipe.repository.mjs';
 import inventoryService from './inventory.service.mjs';
 import imageService from './image/image.service.mjs';
-import aiService from './ai/ai.service.mjs';
-import { extractRecipeSuggestion } from './ai/response.parser.mjs';
+import aiService from './ai/ai.service.mjs';import { extractRecipeSuggestion, createRecipeStreamFilter } from './ai/response.parser.mjs';
 import { MessageRole } from '../constants/enums.mjs';
 
 class ChatService {
@@ -50,7 +49,7 @@ class ChatService {
     };
   }
 
-  async sendMessageStream(conversationId, userMessage, { onStatus, onChunk, onRecipe }) {
+    async sendMessageStream(conversationId, userMessage, { onStatus, onChunk, onRecipe, onRecipePending, onRecipeFailed }) {
     let convId = conversationId;
     if (!convId) {
       const conv = await conversationRepository.createConversation('New Conversation');
@@ -71,8 +70,10 @@ class ChatService {
     await conversationRepository.addMessage(convId, MessageRole.USER, userMessage);
 
     let fullAssistantResponse = '';
-    let inRecipeBlock = false;
-    let pendingBuffer = '';
+    const streamFilter = createRecipeStreamFilter({
+      onText: (text) => { if (onChunk) onChunk(text); },
+      onRecipeStart: () => { if (onRecipePending) onRecipePending(); },
+    });
 
     await aiService.generateChatStream(
       inventory,
@@ -80,32 +81,14 @@ class ChatService {
       userMessage,
       (chunk) => {
         fullAssistantResponse += chunk;
-
-        if (!inRecipeBlock) {
-          pendingBuffer += chunk;
-          if (pendingBuffer.includes('<<<')) {
-            const splitIdx = pendingBuffer.indexOf('<<<');
-            const safeChunk = pendingBuffer.slice(0, splitIdx);
-            if (safeChunk && onChunk) onChunk(safeChunk);
-            pendingBuffer = pendingBuffer.slice(splitIdx);
-            if (pendingBuffer.includes('<<<RECIPE_SUGGESTION>>>')) {
-              inRecipeBlock = true;
-              pendingBuffer = '';
-            }
-          } else {
-            if (onChunk) onChunk(pendingBuffer);
-            pendingBuffer = '';
-          }
-        }
+        streamFilter.push(chunk);
       },
       onStatus
     );
 
-    if (pendingBuffer && !pendingBuffer.startsWith('<<<') && onChunk) {
-      onChunk(pendingBuffer);
-    }
+    streamFilter.flush();
 
-    const { cleanText, recipeSuggestion } = extractRecipeSuggestion(fullAssistantResponse);
+    const { cleanText, recipeSuggestion, hasRecipeBlock } = extractRecipeSuggestion(fullAssistantResponse);
     const textToSave = cleanText || fullAssistantResponse;
 
     if (textToSave) {
@@ -127,6 +110,9 @@ class ChatService {
       } catch (err) {
         console.warn('Failed to save suggested recipe from chat:', err.message);
       }
+    }
+    if ((streamFilter.inRecipeBlock || hasRecipeBlock) && !savedRecipe && onRecipeFailed) {
+      onRecipeFailed('Resep tidak dapat diproses');
     }
 
     return {

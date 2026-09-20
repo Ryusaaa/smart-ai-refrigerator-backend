@@ -1,23 +1,79 @@
-export function buildRecipePrompt(context) {
-  const systemPrompt = `You are a professional chef and smart refrigerator assistant. 
-Return ONLY valid JSON format. Do not include any markdown formatting, thoughts, or extra text outside JSON.
+export const RECIPE_JSON_SCHEMA = {
+  type: 'object',
+  properties: {
+    recipes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          description: { type: 'string' },
+          cookingTime: { type: 'number' },
+          difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+          ingredients: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                ingredientName: { type: 'string' },
+                quantity: { type: 'number' },
+                unit: { type: 'string' },
+                isOptional: { type: 'boolean' },
+              },
+              required: ['ingredientName', 'quantity', 'unit', 'isOptional'],
+            },
+          },
+          instructions: { type: 'array', items: { type: 'string' } },
+          sources: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                url: { type: 'string' },
+                note: { type: 'string' },
+              },
+              required: ['title', 'url'],
+            },
+          },
+        },
+        required: ['title', 'description', 'cookingTime', 'difficulty', 'ingredients', 'instructions'],
+      },
+    },
+  },
+  required: ['recipes'],
+};
+
+export function buildRecipePrompt(context, { attempt = 1 } = {}) {
+  const systemPrompt = `You are a professional chef and smart refrigerator assistant.
+Return ONLY one valid JSON object. No markdown, no code fences, no thoughts, no text before or after the JSON.
 The JSON must have a single key "recipes" containing an array of recipe objects.
 Each recipe must have:
 - title (string)
-- description (string)
+- description (string, max 2 short sentences)
 - cookingTime (number in minutes)
-- difficulty (string)
-- ingredients (array of objects with ingredientName, quantity, unit, isOptional)
-- instructions (array of strings)
-- sources (optional array of objects with title: string, url: string, note: string - providing real reference cooking inspirations/techniques or reputable recipe links)`;
+- difficulty (one of: "easy", "medium", "hard")
+- ingredients (array of objects with ingredientName (string), quantity (number), unit (string), isOptional (boolean))
+- instructions (array of strings, max 8 short steps)
+- sources (optional array of objects with title: string, url: string, note: string - real reference links only; use [] if you are not sure)
+
+STRICT JSON RULES:
+- quantity must be a plain decimal number (write 0.5, never 1/2 or "secukupnya"; use 0 if the amount is unspecified).
+- Escape any double quote inside a string as \\" and never put line breaks inside a string.
+- No comments and no trailing commas.
+- Keep every recipe concise so the whole JSON is complete.`;
 
   const available = context.availableIngredients.map(i => `${i.name} (${i.quantity} ${i.unit})`).join(', ');
   const expiring = context.expiringIngredients.map(i => `${i.name} (expires in ${i.daysUntilExpiry} days)`).join(', ');
 
+  const retryHint = attempt > 1
+    ? `\nYour previous reply was not valid JSON. Reply again with ONLY the JSON object, complete and properly closed.`
+    : '';
+
   const userPrompt = `I have the following ingredients available: ${available || 'none'}.
 The following ingredients are expiring soon and should be prioritized: ${expiring || 'none'}.
 Preferences: Max cooking time ${context.preferences.maxCookingTime || 240} mins, difficulty: ${context.preferences.difficulty || 'any'}, cuisine: ${context.preferences.cuisine || 'any'}, max missing ingredients: ${context.preferences.maxMissingIngredients || 2}.
-Generate 3 recipe recommendations based on these ingredients and preferences. Include inspiration cooking references in 'sources' where appropriate. Return ONLY valid JSON.`;
+Generate 3 recipe recommendations based on these ingredients and preferences. Include inspiration cooking references in 'sources' where appropriate. Return ONLY valid JSON.${retryHint}`;
 
   return { systemPrompt, userPrompt };
 }

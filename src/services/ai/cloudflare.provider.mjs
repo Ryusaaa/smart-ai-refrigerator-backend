@@ -20,6 +20,12 @@ function isRetryableError(error) {
   return /\b503\b|UNAVAILABLE|overloaded|high demand|\b429\b|rate limit|ECONNRESET|ETIMEDOUT|fetch failed/i.test(text);
 }
 
+function isJsonModeError(error) {
+  if (error?.status === 400 || error?.status === 422) return true;
+  const text = `${error?.message || ''}`;
+  return /json mode|response_format|json_schema|json schema|empty response/i.test(text);
+}
+
 function assertConfigured() {
   if (!env.CLOUDFLARE_ACCOUNT_ID || !env.CLOUDFLARE_API_TOKEN) {
     throw new AIProviderError(500, 'Cloudflare Workers AI is not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN in your .env file.');
@@ -37,9 +43,10 @@ function buildMessages(systemPrompt, userPrompt) {
   ];
 }
 
-async function generateCompletion({ systemPrompt, userPrompt, onStatus }) {
+async function generateCompletion({ systemPrompt, userPrompt, onStatus, responseFormat = null }) {
   assertConfigured();
   let lastError = null;
+  let useJsonMode = Boolean(responseFormat);
 
   for (let attempt = 1; attempt <= RETRY_ATTEMPTS + 1; attempt++) {
     try {
@@ -52,7 +59,10 @@ async function generateCompletion({ systemPrompt, userPrompt, onStatus }) {
         body: JSON.stringify({
           messages: buildMessages(systemPrompt, userPrompt),
           max_tokens: env.CLOUDFLARE_AI_MAX_TOKENS,
-          temperature: env.CLOUDFLARE_AI_TEMPERATURE
+          temperature: env.CLOUDFLARE_AI_TEMPERATURE,
+          ...(useJsonMode
+            ? { response_format: { type: 'json_schema', json_schema: responseFormat } }
+            : {}),
         }),
       });
 
@@ -68,14 +78,21 @@ async function generateCompletion({ systemPrompt, userPrompt, onStatus }) {
         throw new AIProviderError(502, `Cloudflare AI error: ${JSON.stringify(data.errors)}`);
       }
 
+      // Pada JSON Mode, `response` sudah berupa object (bukan string).
       const text = data.result?.response;
-      if (!text) {
+      if (text === undefined || text === null || text === '') {
         throw new AIProviderError(502, 'Cloudflare AI returned an empty response');
       }
       return text;
     } catch (error) {
       lastError = error;
       console.error(`Cloudflare AI error (attempt ${attempt}/${RETRY_ATTEMPTS + 1}):`, error.message);
+
+      if (useJsonMode && isJsonModeError(error)) {
+        useJsonMode = false;
+        console.warn('Cloudflare AI: JSON Mode gagal/tidak didukung, mengulang tanpa response_format.');
+        continue;
+      }
 
       const canRetry = isRetryableError(error) && attempt <= RETRY_ATTEMPTS;
       if (!canRetry) break;
