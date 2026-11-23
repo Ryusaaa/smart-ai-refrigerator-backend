@@ -137,11 +137,24 @@ function preview(rawContent) {
   return `${text.length} chars, awal: ${text.slice(0, 300).replace(/\s+/g, ' ')}`;
 }
 
+function parseRecipeJsonDetailed(rawContent) {
+  try {
+    return parseLooseJsonDetailed(rawContent);
+  } catch (error) {
+    if (typeof rawContent !== 'string') throw error;
+
+    const repaired = rawContent.replace(/(["']?isOptional["']?\s*:\s*)(?=[,}])/gi, '$1false');
+    if (repaired === rawContent) throw error;
+
+    console.warn('[recipe-parser] Nilai isOptional kosong, menggunakan false.');
+    return parseLooseJsonDetailed(repaired);
+  }
+}
 
 export function parseRecipeResponse(rawContent) {
   let parsed;
   try {
-    parsed = parseLooseJsonDetailed(rawContent);
+    parsed = parseRecipeJsonDetailed(rawContent);
   } catch (error) {
     console.warn(`[recipe-parser] JSON tidak bisa dibaca (${error.message}) -> ${preview(rawContent)}`);
     throw new RecipeParseError();
@@ -182,7 +195,7 @@ export function extractRecipeSuggestion(rawText) {
 
   let recipeSuggestion = null;
   try {
-    const parsed = parseLooseJsonDetailed(blockText);
+    const parsed = parseRecipeJsonDetailed(blockText);
     const first = coerceRecipeList(parsed.value)[0];
     recipeSuggestion = normalizeRecipe(first, { strict: endIdx === -1 });
   } catch (err) {

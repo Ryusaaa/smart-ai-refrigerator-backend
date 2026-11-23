@@ -58,6 +58,7 @@ Each recipe must have:
 - sources (optional array of objects with title: string, url: string, note: string - real reference links only; use [] if you are not sure)
 
 STRICT JSON RULES:
+- Always include isOptional as true or false for every ingredient; use false unless the ingredient is explicitly optional.
 - quantity must be a plain decimal number (write 0.5, never 1/2 or "secukupnya"; use 0 if the amount is unspecified).
 - Escape any double quote inside a string as \\" and never put line breaks inside a string.
 - No comments and no trailing commas.
